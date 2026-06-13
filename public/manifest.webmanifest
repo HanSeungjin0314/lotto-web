@@ -1,0 +1,11 @@
+{
+  "name": "로또 통계형 추첨기",
+  "short_name": "로또추첨기",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
