@@ -1,19 +1,32 @@
 import { AdminDrawForm } from "@/components/AdminDrawForm";
-import { getDraws } from "@/lib/draws";
+import { UpdateLogList } from "@/components/UpdateLogList";
+import { getLatestDraw } from "@/lib/draws";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export default async function AdminPage() {
-  const draws = await getDraws();
-  const latest = draws[draws.length - 1];
+  const latest = await getLatestDraw();
+
   return (
-    <main className="wrap">
+    <main className="container">
       <section className="panel">
         <h1>관리자</h1>
-        <p className="muted">새 추첨 회차를 직접 추가하거나, 자동 업데이트 API를 수동 실행합니다.</p>
-        <div className="notice" style={{marginBottom:18}}>
-          Supabase 연결 전에는 저장이 되지 않습니다. `.env.local`에 Supabase 값과 `ADMIN_SECRET`을 설정한 뒤 사용하세요.
-        </div>
-        <p><strong>현재 최신 회차:</strong> {latest?.draw_no}회 / {latest?.draw_date}</p>
+        <p className="muted">
+          실제 로또 당첨번호만 입력하세요. 일반 사용자 메뉴에서는 숨겨진 페이지입니다.
+        </p>
+
         <AdminDrawForm latestNo={latest?.draw_no ?? 0} />
+      </section>
+
+      <section className="panel">
+        <h2>업데이트 로그</h2>
+        <p className="muted">
+          Cron 자동 업데이트 실행 결과를 확인합니다.
+        </p>
+
+        <UpdateLogList />
       </section>
     </main>
   );
