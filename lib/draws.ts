@@ -96,16 +96,42 @@ export async function getDraws(): Promise<LottoDraw[]> {
     return localDraws;
   }
 
-  const { data, error } = await supabase
-    .from("lotto_draws")
-    .select("*")
-    .order("draw_no", { ascending: true });
+  const pageSize = 1000;
+  let from = 0;
+  const rows: LottoDrawRow[] = [];
 
-  if (error || !data || data.length === 0) {
+  while (true) {
+    const to = from + pageSize - 1;
+
+    const { data, error } = await supabase
+      .from("lotto_draws")
+      .select("*")
+      .order("draw_no", { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      console.error("Supabase getDraws error:", error.message);
+      return localDraws;
+    }
+
+    if (!data || data.length === 0) {
+      break;
+    }
+
+    rows.push(...data);
+
+    if (data.length < pageSize) {
+      break;
+    }
+
+    from += pageSize;
+  }
+
+  if (rows.length === 0) {
     return localDraws;
   }
 
-  return data.map(dbRowToDraw);
+  return rows.map(dbRowToDraw);
 }
 
 export async function getLatestDraw(): Promise<LottoDraw | null> {
