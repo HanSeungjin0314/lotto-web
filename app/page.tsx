@@ -1,4 +1,6 @@
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 import { Balls } from "@/components/Balls";
 import { PickerClient } from "@/components/PickerClient";
 import { getDraws } from "@/lib/draws";

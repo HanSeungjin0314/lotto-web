@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 import { Balls } from "@/components/Balls";
 import { getDraws } from "@/lib/draws";
 import { getNumberStats } from "@/lib/lotto";

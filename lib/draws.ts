@@ -26,10 +26,18 @@ function createServiceSupabaseClient() {
   }
 
   return createClient(url, serviceRoleKey, {
-    auth: {
-      persistSession: false,
+  auth: {
+    persistSession: false,
+  },
+  global: {
+    fetch: (input, init = {}) => {
+      return fetch(input, {
+        ...init,
+        cache: "no-store",
+      });
     },
-  });
+  },
+});
 }
 
 function dbRowToDraw(row: LottoDrawRow): LottoDraw {
