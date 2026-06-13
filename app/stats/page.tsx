@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { Balls } from "@/components/Balls";
 import { getDraws } from "@/lib/draws";
 import { getNumberStats } from "@/lib/lotto";

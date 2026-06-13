@@ -33,8 +33,13 @@ async function fetchDraw(drawNo: number): Promise<LottoDraw | null> {
 
   const body = await res.text();
 
-  if (!res.ok) return null;
-  if (body.trim().startsWith("<")) return null;
+  if (!res.ok) {
+    return null;
+  }
+
+  if (body.trim().startsWith("<")) {
+    return null;
+  }
 
   let json: any;
 
@@ -46,7 +51,9 @@ async function fetchDraw(drawNo: number): Promise<LottoDraw | null> {
 
   const row = json?.data?.list?.[0];
 
-  if (!row) return null;
+  if (!row) {
+    return null;
+  }
 
   const nums = [
     Number(row.tm1WnNo),
@@ -56,10 +63,6 @@ async function fetchDraw(drawNo: number): Promise<LottoDraw | null> {
     Number(row.tm5WnNo),
     Number(row.tm6WnNo),
   ].sort((a, b) => a - b);
-
-  if (nums.some((num) => !Number.isInteger(num) || num < 1 || num > 45)) {
-    return null;
-  }
 
   return {
     draw_no: Number(row.ltEpsd),
@@ -72,29 +75,34 @@ async function fetchDraw(drawNo: number): Promise<LottoDraw | null> {
 }
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET || process.env.ADMIN_SECRET;
-  const actual =
-    req.headers.get("x-cron-secret") || req.nextUrl.searchParams.get("secret");
-  const cronHeader = req.headers.get("x-vercel-cron");
+  try {
+    const expected = process.env.CRON_SECRET || process.env.ADMIN_SECRET;
+    const actual =
+      req.headers.get("x-cron-secret") || req.nextUrl.searchParams.get("secret");
+    const cronHeader = req.headers.get("x-vercel-cron");
 
-  if (expected && actual !== expected && !cronHeader) {
-    return NextResponse.json(
-      { error: "업데이트 토큰이 올바르지 않습니다." },
-      { status: 401 }
-    );
-  }
+    if (expected && actual !== expected && !cronHeader) {
+      return NextResponse.json(
+        { error: "업데이트 토큰이 올바르지 않습니다." },
+        { status: 401 }
+      );
+    }
 
-  const draws = await getDraws();
-  const latest = draws[draws.length - 1];
-  let nextNo = (latest?.draw_no ?? 0) + 1;
+    const draws = await getDraws();
+    const latest = draws[draws.length - 1];
+    const nextNo = (latest?.draw_no ?? 0) + 1;
 
-  const savedDraws: LottoDraw[] = [];
-
-  while (true) {
     const next = await fetchDraw(nextNo);
 
     if (!next) {
-      break;
+      return NextResponse.json({
+        message: "추가할 신규 회차가 없습니다.",
+        latest_draw_no: latest?.draw_no ?? null,
+        next_draw_no: nextNo,
+        saved: false,
+        count: 0,
+        draws: [],
+      });
     }
 
     const errors = validateDrawInput(next);
@@ -106,38 +114,26 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (draws.some((d) => d.draw_no === next.draw_no)) {
-      nextNo += 1;
-      continue;
-    }
+    const saved = await addDraw(next);
 
-    try {
-      const saved = await addDraw(next);
-      savedDraws.push(saved);
-    } catch (e) {
-      return NextResponse.json(
-        { error: e instanceof Error ? e.message : "DB 저장 오류" },
-        { status: 500 }
-      );
-    }
-
-    nextNo += 1;
-
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    return NextResponse.json({
+      message: "1개 회차를 저장했습니다.",
+      saved: true,
+      count: 1,
+      latest_draw_no: saved.draw_no,
+      draw: {
+        draw_no: saved.draw_no,
+        draw_date: saved.draw_date,
+        numbers: saved.numbers,
+        bonus: saved.bonus,
+      },
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "알 수 없는 서버 오류",
+      },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({
-    message:
-      savedDraws.length > 0
-        ? `${savedDraws.length}개 회차를 저장했습니다.`
-        : "추가할 신규 회차가 없습니다.",
-    saved: savedDraws.length > 0,
-    count: savedDraws.length,
-    draws: savedDraws.map((draw) => ({
-      draw_no: draw.draw_no,
-      draw_date: draw.draw_date,
-      numbers: draw.numbers,
-      bonus: draw.bonus,
-    })),
-  });
 }
