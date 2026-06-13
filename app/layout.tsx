@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "로또 통계형 추첨기",
-  description: "역대 로또 당첨번호 기반 통계형 번호 추첨기",
+export const metadata = {
+  title: "로또 통계형 번호 추첨기",
+  description: "역대 로또 당첨번호 통계를 기반으로 번호를 추천하는 웹앱",
+  applicationName: "로또추첨기",
+  themeColor: "#2563eb",
   manifest: "/manifest.webmanifest",
 };
 
