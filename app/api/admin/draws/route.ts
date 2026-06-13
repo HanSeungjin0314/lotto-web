@@ -3,28 +3,72 @@ import { addDraw, getDraws } from "@/lib/draws";
 import { validateDrawInput } from "@/lib/lotto";
 import type { LottoDraw } from "@/types/lotto";
 
-export async function POST(req: NextRequest) {
+export const dynamic = "force-dynamic";
+
+function isValidAdmin(req: NextRequest) {
   const expected = process.env.ADMIN_SECRET;
   const actual = req.headers.get("x-admin-secret");
-  if (!expected || actual !== expected) {
-    return NextResponse.json({ error: "관리자 토큰이 올바르지 않습니다." }, { status: 401 });
+
+  return Boolean(expected && actual && actual === expected);
+}
+
+export async function GET(req: NextRequest) {
+  if (!isValidAdmin(req)) {
+    return NextResponse.json(
+      { error: "관리자 인증이 필요합니다." },
+      { status: 401 }
+    );
   }
 
-  const input = await req.json() as LottoDraw;
-  const numbers = [...input.numbers].sort((a, b) => a - b);
-  const draw: LottoDraw = { ...input, numbers };
-  const errors = validateDrawInput(draw);
-  if (errors.length) return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
+  return NextResponse.json({ ok: true });
+}
 
-  const existing = await getDraws();
-  if (existing.some((d) => d.draw_no === draw.draw_no)) {
-    return NextResponse.json({ error: `${draw.draw_no}회차는 이미 존재합니다.` }, { status: 409 });
+export async function POST(req: NextRequest) {
+  if (!isValidAdmin(req)) {
+    return NextResponse.json(
+      { error: "관리자 토큰이 올바르지 않습니다." },
+      { status: 401 }
+    );
   }
 
   try {
+    const input = (await req.json()) as LottoDraw;
+
+    const numbers = [...input.numbers].sort((a, b) => a - b);
+
+    const draw: LottoDraw = {
+      ...input,
+      numbers,
+    };
+
+    const errors = validateDrawInput(draw);
+
+    if (errors.length) {
+      return NextResponse.json(
+        { error: errors.join(" ") },
+        { status: 400 }
+      );
+    }
+
+    const existing = await getDraws();
+
+    if (existing.some((d) => d.draw_no === draw.draw_no)) {
+      return NextResponse.json(
+        { error: `${draw.draw_no}회차는 이미 존재합니다.` },
+        { status: 409 }
+      );
+    }
+
     const saved = await addDraw(draw);
+
     return NextResponse.json({ draw: saved });
-  } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "DB 저장 오류" }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "DB 저장 오류",
+      },
+      { status: 500 }
+    );
   }
 }
