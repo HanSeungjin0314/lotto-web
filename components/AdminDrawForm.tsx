@@ -127,7 +127,7 @@ export function AdminDrawForm({ latestNo }: { latestNo: number }) {
     setKind("");
 
     try {
-      const res = await fetch("/api/update-latest", {
+      const res = await fetch("/api/cron/update-latest", {
         headers: {
           "x-cron-secret": secret,
           "x-admin-secret": secret,
