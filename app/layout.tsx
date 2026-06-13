@@ -1,18 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "로또 통계형 번호 추첨기",
   description: "역대 로또 당첨번호 통계를 기반으로 번호를 추천하는 웹앱",
   applicationName: "로또추첨기",
-  themeColor: "#2563eb",
   manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f172a",
+  themeColor: "#2563eb",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -20,7 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ko">
       <body>
         <header className="site-header">
-          <a href="/" className="brand">로또 통계형 추첨기</a>
+          <a href="/" className="brand">
+            로또 통계형 추첨기
+          </a>
           <nav>
             <a href="/stats">번호통계</a>
             <a href="/history">역대번호</a>
