@@ -1,4 +1,4 @@
-﻿import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import localDrawsJson from "@/data/lotto-draws.json";
 import type { LottoDraw } from "@/types/lotto";
 
@@ -135,13 +135,29 @@ export async function getDraws(): Promise<LottoDraw[]> {
 }
 
 export async function getLatestDraw(): Promise<LottoDraw | null> {
-  const draws = await getDraws();
+  const supabase = createServiceSupabaseClient();
 
-  if (draws.length === 0) {
-    return null;
+  if (!supabase) {
+    return localDraws[localDraws.length - 1] ?? null;
   }
 
-  return draws[draws.length - 1];
+  const { data, error } = await supabase
+    .from("lotto_draws")
+    .select("*")
+    .order("draw_no", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Supabase getLatestDraw error:", error.message);
+    return localDraws[localDraws.length - 1] ?? null;
+  }
+
+  if (!data) {
+    return localDraws[localDraws.length - 1] ?? null;
+  }
+
+  return dbRowToDraw(data);
 }
 
 export async function addDraw(draw: LottoDraw): Promise<LottoDraw> {
@@ -149,7 +165,7 @@ export async function addDraw(draw: LottoDraw): Promise<LottoDraw> {
 
   if (!supabase) {
     throw new Error(
-      "Supabase ?섍꼍蹂?섍? ?놁뒿?덈떎. .env ?뚯씪??NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY瑜??뺤씤?섏꽭??"
+      "Supabase 환경변수가 없습니다. NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY를 확인하세요."
     );
   }
 

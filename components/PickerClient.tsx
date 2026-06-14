@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Balls } from "@/components/Balls";
@@ -57,15 +57,20 @@ function createId() {
 }
 
 function getLatestFromResponse(json: unknown): LatestDraw | null {
+  const data = json as {
+    latest?: LatestDraw | null;
+    draws?: LatestDraw[];
+    data?: LatestDraw[];
+  };
+
+  if (data.latest) {
+    return data.latest;
+  }
+
   if (Array.isArray(json)) {
     const latest = json[json.length - 1] as LatestDraw | undefined;
     return latest ?? null;
   }
-
-  const data = json as {
-    draws?: LatestDraw[];
-    data?: LatestDraw[];
-  };
 
   if (Array.isArray(data.draws)) {
     return data.draws[data.draws.length - 1] ?? null;
@@ -156,7 +161,7 @@ export function PickerClient({ initialSets }: { initialSets: GeneratedSet[] }) {
     setLatestLoading(true);
 
     try {
-      const res = await fetch("/api/draws", {
+      const res = await fetch("/api/draws/latest", {
         cache: "no-store",
       });
 

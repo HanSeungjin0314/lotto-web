@@ -3,26 +3,28 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
 function loadDotEnv() {
-  const envPath = path.join(process.cwd(), ".env");
+  for (const filename of [".env.local", ".env"]) {
+    const envPath = path.join(process.cwd(), filename);
 
-  if (!fs.existsSync(envPath)) return;
+    if (!fs.existsSync(envPath)) continue;
 
-  const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
+    const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
 
-  for (const line of lines) {
-    const trimmed = line.trim();
+    for (const line of lines) {
+      const trimmed = line.trim();
 
-    if (!trimmed || trimmed.startsWith("#")) continue;
+      if (!trimmed || trimmed.startsWith("#")) continue;
 
-    const index = trimmed.indexOf("=");
+      const index = trimmed.indexOf("=");
 
-    if (index === -1) continue;
+      if (index === -1) continue;
 
-    const key = trimmed.slice(0, index).trim();
-    const value = trimmed.slice(index + 1).trim();
+      const key = trimmed.slice(0, index).trim();
+      const value = trimmed.slice(index + 1).trim().replace(/^['"]|['"]$/g, "");
 
-    if (!process.env[key]) {
-      process.env[key] = value;
+      if (!process.env[key]) {
+        process.env[key] = value;
+      }
     }
   }
 }
@@ -31,6 +33,7 @@ loadDotEnv();
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const maxSyncCount = Number(process.env.LOTTO_MAX_SYNC_COUNT || 200);
 
 if (!url || !serviceRoleKey) {
   console.error("NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY가 필요합니다.");
@@ -41,69 +44,44 @@ const supabase = createClient(url, serviceRoleKey, {
   auth: { persistSession: false },
 });
 
-function formatDate(yyyymmdd) {
-  if (!yyyymmdd) return null;
-
-  const text = String(yyyymmdd);
-
-  if (text.length !== 8) return text;
-
-  return `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
-}
-
 async function fetchDraw(drawNo) {
-  const apiUrl =
-    `https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=${drawNo}&_=${Date.now()}`;
+  const apiUrl = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${drawNo}`;
 
   const res = await fetch(apiUrl, {
     method: "GET",
     cache: "no-store",
     headers: {
-      "Accept": "application/json, text/javascript, */*; q=0.01",
+      Accept: "application/json",
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-      "X-Requested-With": "XMLHttpRequest",
-      "Referer": "https://www.dhlottery.co.kr/gameResult.do?method=byWin",
     },
   });
 
-  const body = await res.text();
-
   if (!res.ok) {
     console.log(`${drawNo}회차 조회 실패: HTTP ${res.status}`);
-    console.log(body.slice(0, 120));
     return null;
   }
 
-  if (body.trim().startsWith("<")) {
-    console.log(`${drawNo}회차 조회 결과가 JSON이 아니라 HTML입니다.`);
-    console.log(body.slice(0, 120));
-    return null;
-  }
-
-  let json;
+  let data;
 
   try {
-    json = JSON.parse(body);
-  } catch (error) {
+    data = await res.json();
+  } catch {
     console.log(`${drawNo}회차 JSON 파싱 실패`);
-    console.log(body.slice(0, 120));
     return null;
   }
 
-  const row = json?.data?.list?.[0];
-
-  if (!row) {
+  if (data?.returnValue !== "success") {
     return null;
   }
 
   const nums = [
-    Number(row.tm1WnNo),
-    Number(row.tm2WnNo),
-    Number(row.tm3WnNo),
-    Number(row.tm4WnNo),
-    Number(row.tm5WnNo),
-    Number(row.tm6WnNo),
+    Number(data.drwtNo1),
+    Number(data.drwtNo2),
+    Number(data.drwtNo3),
+    Number(data.drwtNo4),
+    Number(data.drwtNo5),
+    Number(data.drwtNo6),
   ].sort((a, b) => a - b);
 
   if (nums.some((num) => !Number.isInteger(num) || num < 1 || num > 45)) {
@@ -111,18 +89,31 @@ async function fetchDraw(drawNo) {
     return null;
   }
 
+  const bonus = Number(data.bnusNo);
+
+  if (!Number.isInteger(bonus) || bonus < 1 || bonus > 45 || nums.includes(bonus)) {
+    console.log(`${drawNo}회차 보너스 번호 형식이 이상합니다.`);
+    return null;
+  }
+
   return {
-    draw_no: Number(row.ltEpsd),
-    draw_date: formatDate(row.ltRflYmd),
+    draw_no: Number(data.drwNo),
+    draw_date: data.drwNoDate,
     n1: nums[0],
     n2: nums[1],
     n3: nums[2],
     n4: nums[3],
     n5: nums[4],
     n6: nums[5],
-    bonus: Number(row.bnsWnNo),
-    first_prize_amount: row.rnk1WnAmt ? Number(row.rnk1WnAmt) : null,
-    first_winner_count: row.rnk1WnNope ? Number(row.rnk1WnNope) : null,
+    bonus,
+    first_prize_amount:
+      data.firstWinamnt === null || data.firstWinamnt === undefined
+        ? null
+        : String(data.firstWinamnt),
+    first_winner_count:
+      data.firstPrzwnerCo === null || data.firstPrzwnerCo === undefined
+        ? null
+        : Number(data.firstPrzwnerCo),
   };
 }
 
@@ -143,7 +134,7 @@ let savedCount = 0;
 console.log(`현재 DB 최신 회차: ${nextNo - 1}`);
 console.log(`${nextNo}회차부터 최신 회차까지 동기화를 시작합니다.`);
 
-while (true) {
+while (savedCount < maxSyncCount) {
   const draw = await fetchDraw(nextNo);
 
   if (!draw) {
@@ -167,7 +158,7 @@ while (true) {
   savedCount += 1;
   nextNo += 1;
 
-  await new Promise((resolve) => setTimeout(resolve, 400));
+  await new Promise((resolve) => setTimeout(resolve, 300));
 }
 
 console.log(`동기화 완료. 추가 저장 회차 수: ${savedCount}`);

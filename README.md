@@ -1,42 +1,63 @@
-# 로또 통계형 추첨기 웹앱 V1
+# 로또스탯픽 - 로또 통계형 번호 추첨기
 
-업로드된 엑셀 파일을 초기 데이터로 변환해 만든 Next.js + Supabase + Vercel 기반 웹앱입니다.
+Next.js + Supabase 기반 로또 번호 추천 웹앱입니다.
 
-- 초기 데이터: 1139개 회차
-- 최신 회차: 1139회 / 2024-09-28
-- 기본 모드: Supabase가 없어도 `data/lotto-draws.json`으로 실행
-- 확장 모드: Supabase 연결 시 DB 저장, 관리자 회차 추가, 자동 업데이트 가능
+## 현재 구조
 
-## 1. 로컬 실행
+- `/` : 추천번호 생성, 최신 당첨번호, 저장번호 비교
+- `/stats` : 번호별 통계
+- `/history` : 역대 당첨번호 최근 200개 표시
+- `/admin` : 관리자 회차 수동 저장, 최신 회차 자동 확인, 업데이트 로그 확인
+- `/api/generate` : 추천번호 생성 API
+- `/api/draws/latest` : 최신 1회차만 조회하는 가벼운 API
+- `/api/update-latest` : 동행복권 회차 동기화 API
+- `/api/cron/update-latest` : Vercel Cron용 업데이트 API
+
+## 로컬 실행
 
 ```powershell
 npm install
+copy .env.example .env.local
 npm run dev
 ```
 
 브라우저에서 `http://localhost:3000` 접속.
 
-## 2. Supabase 연결
+## Supabase 설정
 
 1. Supabase 프로젝트 생성
-2. `supabase/schema.sql`을 SQL Editor에서 실행
-3. `.env.example`을 `.env.local`로 복사
-4. Supabase URL, anon key, service role key 입력
-5. 초기 데이터 업로드
+2. `supabase/schema.sql` 전체를 SQL Editor에서 실행
+3. `.env.local`에 아래 값 입력
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ADMIN_SECRET`
+   - `CRON_SECRET`
+4. 초기 데이터 업로드
 
 ```powershell
 npm run import:supabase
 ```
 
-## 3. 관리자 회차 추가
+## 최신 회차 동기화
 
-`/admin` 페이지에서 `.env.local`의 `ADMIN_SECRET` 값을 입력하고 회차를 저장합니다.
+DB가 오래된 경우 아래 명령으로 현재 공개된 회차까지 순차 저장합니다.
 
-## 4. 자동 업데이트
+```powershell
+npm run extract:excel
+node scripts/sync-latest-draws.mjs
+```
 
-Vercel 배포 후 `vercel.json`의 Cron 설정으로 매주 토요일 15:30 UTC, 즉 한국시간 일요일 00:30에 `/api/update-latest`가 호출됩니다.
-동행복권 조회 응답 방식이 변경될 수 있으므로 관리자 수동 입력 기능을 반드시 유지하세요.
+관리자 페이지에서는 `최신 회차 자동 확인` 버튼으로도 동기화할 수 있습니다. 기본적으로 한 번에 최대 30개 회차까지만 저장합니다. 더 많이 따라잡아야 하면 `.env.local`의 `LOTTO_MAX_SYNC_COUNT` 값을 늘리세요.
 
-## 5. 주의
+## 배포
+
+Vercel 프로젝트 환경변수에 `.env.local`과 같은 값을 등록하세요. `vercel.json`은 매주 일요일 00:00 UTC에 `/api/cron/update-latest`를 호출합니다. 한국시간 기준 일요일 오전입니다.
+
+## 보안 주의
+
+`.env`, `.env.local`, Supabase service role key는 절대 GitHub나 ZIP으로 공유하지 마세요. service role key가 외부로 노출되면 Supabase에서 즉시 재발급하세요.
+
+## 주의
 
 로또는 독립 확률 게임입니다. 이 앱은 과거 번호 기반 통계/필터링 도구이며 당첨을 보장하지 않습니다.
