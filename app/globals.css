@@ -328,3 +328,42 @@ th { background: #f8fafc; color: #475569; font-size: 13px; }
     flex-wrap: wrap;
   }
 }
+
+/* Ad Banner */
+.ad-banner {
+  padding: 0 max(24px, calc((100vw - 1180px) / 2));
+  margin: 36px 0 0;
+}
+
+.ad-banner > div {
+  border: 1px dashed #93c5fd;
+  background: linear-gradient(135deg, #eff6ff, #ffffff);
+  border-radius: 24px;
+  padding: 24px;
+  text-align: center;
+  color: #0f172a;
+}
+
+.ad-banner span {
+  display: inline-flex;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.ad-banner strong {
+  display: block;
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+
+.ad-banner p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+}

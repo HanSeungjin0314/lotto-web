@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { GoogleAnalytics } from "@next/third-parties/google";
+import { AdBanner } from "@/components/AdBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -54,6 +56,8 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
+
   return (
     <html lang="ko">
       <body>
@@ -68,6 +72,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
 
         {children}
+
+        <AdBanner />
 
         <footer className="site-footer">
           <div>
@@ -84,6 +90,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </footer>
       </body>
+
+      {gaId ? <GoogleAnalytics gaId={gaId} /> : null}
     </html>
   );
 }
