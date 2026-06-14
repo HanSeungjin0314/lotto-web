@@ -16,10 +16,19 @@ type FormState = {
   first_winner_count: string;
 };
 
-export function AdminDrawForm({ latestNo }: { latestNo: number }) {
-  const [secret, setSecret] = useState("");
-  const [unlocked, setUnlocked] = useState(false);
+type AdminDrawFormProps = {
+  latestNo: number;
+  secret: string;
+  onLogout: () => void;
+  onUpdated?: () => void;
+};
 
+export function AdminDrawForm({
+  latestNo,
+  secret,
+  onLogout,
+  onUpdated,
+}: AdminDrawFormProps) {
   const [form, setForm] = useState<FormState>({
     draw_no: String(latestNo + 1),
     draw_date: new Date().toISOString().slice(0, 10),
@@ -42,37 +51,20 @@ export function AdminDrawForm({ latestNo }: { latestNo: number }) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function unlockAdmin() {
-    setLoading(true);
-    setMessage("");
-    setKind("");
-
-    try {
-      const res = await fetch("/api/admin/draws", {
-        method: "GET",
-        headers: {
-          "x-admin-secret": secret,
-        },
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        throw new Error(json.error || "관리자 인증에 실패했습니다.");
-      }
-
-      setUnlocked(true);
-      setKind("success");
-      setMessage("관리자 인증이 완료되었습니다.");
-    } catch (error) {
-      setUnlocked(false);
-      setKind("error");
-      setMessage(
-        error instanceof Error ? error.message : "알 수 없는 오류입니다."
-      );
-    } finally {
-      setLoading(false);
-    }
+  function resetForm(nextDrawNo?: number) {
+    setForm({
+      draw_no: String(nextDrawNo ?? Number(form.draw_no) + 1),
+      draw_date: new Date().toISOString().slice(0, 10),
+      n1: "",
+      n2: "",
+      n3: "",
+      n4: "",
+      n5: "",
+      n6: "",
+      bonus: "",
+      first_prize_amount: "",
+      first_winner_count: "",
+    });
   }
 
   async function submit() {
@@ -111,11 +103,11 @@ export function AdminDrawForm({ latestNo }: { latestNo: number }) {
 
       setKind("success");
       setMessage(`${json.draw.draw_no}회차가 저장되었습니다.`);
+      resetForm(Number(json.draw.draw_no) + 1);
+      onUpdated?.();
     } catch (error) {
       setKind("error");
-      setMessage(
-        error instanceof Error ? error.message : "알 수 없는 오류입니다."
-      );
+      setMessage(error instanceof Error ? error.message : "알 수 없는 오류입니다.");
     } finally {
       setLoading(false);
     }
@@ -140,53 +132,34 @@ export function AdminDrawForm({ latestNo }: { latestNo: number }) {
         throw new Error(json.error || "자동 업데이트에 실패했습니다.");
       }
 
+      const drawNos = Array.isArray(json.draw_nos) ? json.draw_nos : [];
+      const suffix = drawNos.length > 0 ? ` 저장 회차: ${drawNos.join(", ")}` : "";
+
       setKind("success");
-      setMessage(json.message || "자동 업데이트를 완료했습니다.");
+      setMessage(`${json.message || "자동 업데이트를 완료했습니다."}${suffix}`);
+      onUpdated?.();
     } catch (error) {
       setKind("error");
-      setMessage(
-        error instanceof Error ? error.message : "알 수 없는 오류입니다."
-      );
+      setMessage(error instanceof Error ? error.message : "알 수 없는 오류입니다.");
     } finally {
       setLoading(false);
     }
-  }
-
-  if (!unlocked) {
-    return (
-      <div>
-        <div className="form-grid" style={{ marginBottom: 16 }}>
-          <label style={{ gridColumn: "1 / -1" }}>
-            관리자 비밀번호
-            <input
-              type="password"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              placeholder="ADMIN_SECRET 입력"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  unlockAdmin();
-                }
-              }}
-            />
-          </label>
-        </div>
-
-        <div className="controls">
-          <button onClick={unlockAdmin} disabled={loading || !secret}>
-            {loading ? "확인 중..." : "관리자 인증"}
-          </button>
-        </div>
-
-        {message ? <p className={kind}>{message}</p> : null}
-      </div>
-    );
   }
 
   return (
     <div>
       <div className="notice" style={{ marginBottom: 18 }}>
         관리자 인증 완료 상태입니다. 실제 로또 당첨번호만 입력하세요.
+      </div>
+
+      <div className="controls">
+        <button className="secondary" onClick={updateLatest} disabled={loading}>
+          {loading ? "확인 중..." : "최신 회차 자동 확인"}
+        </button>
+
+        <button className="secondary" onClick={onLogout} disabled={loading}>
+          로그아웃
+        </button>
       </div>
 
       <div className="form-grid" style={{ marginBottom: 16 }}>
@@ -251,23 +224,6 @@ export function AdminDrawForm({ latestNo }: { latestNo: number }) {
       <div className="controls">
         <button onClick={submit} disabled={loading}>
           {loading ? "처리 중..." : "회차 저장"}
-        </button>
-
-        <button className="secondary" onClick={updateLatest} disabled={loading}>
-          최신 회차 자동 확인
-        </button>
-
-        <button
-          className="secondary"
-          onClick={() => {
-            setUnlocked(false);
-            setSecret("");
-            setMessage("");
-            setKind("");
-          }}
-          disabled={loading}
-        >
-          로그아웃
         </button>
       </div>
 
