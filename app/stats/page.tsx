@@ -1,4 +1,5 @@
-export const fetchCache = "force-no-store";
+export const dynamic = "force-dynamic";
+import Link from "next/link";
 import { Balls } from "@/components/Balls";
 import { getDraws } from "@/lib/draws";
 import { getNumberStats } from "@/lib/lotto";
