@@ -474,3 +474,79 @@ th { background: #f8fafc; color: #475569; font-size: 13px; }
     flex-direction: column;
   }
 }
+
+/* Lotto Balls Visibility Fix */
+.lotto-balls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lotto-ball {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff !important;
+  font-size: 15px;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.45),
+    0 0 1px rgba(0, 0, 0, 0.8);
+  box-shadow:
+    inset 0 -8px 14px rgba(0, 0, 0, 0.18),
+    inset 0 6px 10px rgba(255, 255, 255, 0.22),
+    0 8px 14px rgba(15, 23, 42, 0.16);
+}
+
+.ball-yellow {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.ball-blue {
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+}
+
+.ball-red {
+  background: linear-gradient(135deg, #fb7185, #ef4444);
+}
+
+.ball-dark {
+  background: linear-gradient(135deg, #94a3b8, #475569);
+}
+
+.ball-green {
+  background: linear-gradient(135deg, #4ade80, #16a34a);
+}
+
+.ball-bonus {
+  background: linear-gradient(135deg, #fbbf24, #f97316);
+}
+
+.bonus-plus {
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+@media (max-width: 560px) {
+  .lotto-balls {
+    gap: 7px;
+  }
+
+  .lotto-ball {
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
+  }
+
+  .bonus-plus {
+    font-size: 18px;
+  }
+}

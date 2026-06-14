@@ -1,13 +1,41 @@
-export function Ball({ n }: { n: number }) {
-  const cls = n <= 10 ? "b1" : n <= 20 ? "b2" : n <= 30 ? "b3" : n <= 40 ? "b4" : "b5";
-  return <span className={`ball ${cls}`}>{String(n).padStart(2, "0")}</span>;
+type BallsProps = {
+  numbers: number[];
+  bonus?: number | null;
+};
+
+function getBallClass(number: number) {
+  if (number <= 10) return "ball-yellow";
+  if (number <= 20) return "ball-blue";
+  if (number <= 30) return "ball-red";
+  if (number <= 40) return "ball-dark";
+  return "ball-green";
 }
 
-export function Balls({ numbers, bonus }: { numbers: number[]; bonus?: number | null }) {
+function formatNumber(number: number) {
+  return String(number).padStart(2, "0");
+}
+
+export function Balls({ numbers, bonus }: BallsProps) {
   return (
-    <div className="balls">
-      {numbers.map((n) => <Ball key={n} n={n} />)}
-      {bonus ? <><span className="muted">+</span><Ball n={bonus} /></> : null}
+    <div className="lotto-balls">
+      {numbers.map((number) => (
+        <span
+          key={number}
+          className={`lotto-ball ${getBallClass(number)}`}
+          aria-label={`번호 ${number}`}
+        >
+          {formatNumber(number)}
+        </span>
+      ))}
+
+      {bonus ? (
+        <>
+          <span className="bonus-plus">+</span>
+          <span className="lotto-ball ball-bonus" aria-label={`보너스 ${bonus}`}>
+            {formatNumber(bonus)}
+          </span>
+        </>
+      ) : null}
     </div>
   );
 }
