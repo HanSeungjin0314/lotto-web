@@ -367,3 +367,22 @@ th { background: #f8fafc; color: #475569; font-size: 13px; }
   font-size: 14px;
   font-weight: 700;
 }
+
+/* Brand Logo */
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.brand-logo img {
+  width: 180px;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 560px) {
+  .brand-logo img {
+    width: 150px;
+  }
+}
